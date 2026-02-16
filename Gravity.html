@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gravity • Real Earth & Moon • 3D Explanation</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            background-color: black;
+            color: #0f0;
+        }
+        #gravity-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 20px;
+            z-index: 100;
+            pointer-events: none;
+            color: #0f0;
+            text-shadow: 0 0 8px #0f0;
+        }
+        #gravity-info h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            letter-spacing: 3px;
+            border-bottom: 1px dashed #0f0;
+            padding-bottom: 8px;
+        }
+        #gravity-info p {
+            margin: 10px 0;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+        #gravity-info .formula {
+            font-size: 24px;
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            
+        }
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 22px;
+            background-color: #0f0;
+            vertical-align: middle;
+            margin-left: 5px;
+            box-shadow: 0 0 10px #0f0;
+            animation: blink 0.75s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        #moon-label {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #0f0;
+            border-radius: 20px;
+            padding: 8px 18px;
+            font-size: 16px;
+            box-shadow: 0 0 20px #0f0;
+            z-index: 100;
+            pointer-events: none;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        @media (max-width: 700px) {
+            #gravity-info {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                padding: 15px;
+            }
+            #gravity-info h1 { font-size: 22px; }
+            #gravity-info p { font-size: 16px; }
+            #gravity-info .formula { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="gravity-info">
+        <h1>🌍 GRAVITY EXPLAINED</h1>
+        <p>Gravity is the attractive force between masses. Earth’s gravity pulls the Moon into orbit, just as it pulls an apple to the ground.</p>
+        <div class="formula">F = G · m₁·m₂ / r²</div>
+        <p>The Moon (small sphere) orbits Earth because its forward velocity balances the pull of gravity. Without gravity it would fly away; without velocity it would crash.</p>
+        <p style="opacity:0.8;">▼ Drag to rotate • Scroll to zoom</p>
+        <span class="cursor"></span>
+    </div>
+    <div id="moon-label">🌙 MOON • REALISTIC TEXTURE</div>
+
+    <!-- Three.js and controls -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Scene setup ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050510);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(5, 3, 12);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        // --- Controls ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.maxDistance = 30;
+        controls.minDistance = 4;
+        controls.target.set(0, 0, 0);
+
+        // --- Stars background (shining) ---
+        function createStars() {
+            const geometry = new THREE.BufferGeometry();
+            const count = 4000;
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) {
+                const r = 50 + Math.random() * 100;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                positions[i*3+2] = r * Math.cos(phi);
+                
+                const intensity = 0.7 + Math.random() * 0.5;
+                colors[i*3] = intensity;
+                colors[i*3+1] = intensity * (0.8 + Math.random()*0.2);
+                colors[i*3+2] = intensity;
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            const material = new THREE.PointsMaterial({ size: 0.3, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false });
+            const stars = new THREE.Points(geometry, material);
+            scene.add(stars);
+            return stars;
+        }
+        const stars = createStars();
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+        
+        const pointLight = new THREE.PointLight(0xffaa88, 1, 20);
+        pointLight.position.set(2, 3, 5);
+        scene.add(pointLight);
+
+        // --- Create Earth with real texture ---
+        const textureLoader = new THREE.TextureLoader();
+        
+        // High-res Earth map (from Three.js examples)
+        const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+        earthMap.colorSpace = THREE.SRGBColorSpace;
+        
+        const earthGeo = new THREE.SphereGeometry(2, 96, 96);
+        const earthMat = new THREE.MeshStandardMaterial({
+            map: earthMap,
+            emissive: 0x112244,
+            emissiveIntensity: 0.1,
+            roughness: 0.5,
+            metalness: 0.1
+        });
+        const earth = new THREE.Mesh(earthGeo, earthMat);
+        scene.add(earth);
+
+        // Optional: add a subtle cloud layer? Not necessary.
+
+        // Add a subtle glow sprite (atmosphere effect)
+        const glowTexture = (() => {
+            const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+            const ct = c.getContext('2d');
+            const grad = ct.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(0,150,255,0.2)');
+            grad.addColorStop(0.5, 'rgba(0,100,200,0.1)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ct.fillStyle = grad; ct.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(c);
+        })();
+        const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture, blending: THREE.AdditiveBlending }));
+        glowSprite.scale.set(4.5, 4.5, 1);
+        earth.add(glowSprite);
+
+        // --- Moon with real texture ---
+        const moonMap = textureLoader.load('https://threejs.org/examples/textures/planets/moon_1024.jpg');
+        moonMap.colorSpace = THREE.SRGBColorSpace;
+        
+        const moonGeo = new THREE.SphereGeometry(0.6, 64, 64); // slightly larger for visibility
+        const moonMat = new THREE.MeshStandardMaterial({
+            map: moonMap,
+            roughness: 0.8,
+            emissive: 0x111111
+        });
+        const moon = new THREE.Mesh(moonGeo, moonMat);
+        scene.add(moon);
+
+        // --- Orbit path for Moon (dashed line) ---
+        const orbitRadius = 4.8; // adjusted for better view
+        const points = [];
+        const segments = 128;
+        for (let i = 0; i <= segments; i++) {
+            const angle = (i / segments) * Math.PI * 2;
+            points.push(new THREE.Vector3(Math.cos(angle) * orbitRadius, 0, Math.sin(angle) * orbitRadius));
+        }
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const orbitMat = new THREE.LineDashedMaterial({ color: 0x44ff88, dashSize: 0.2, gapSize: 0.15 });
+        const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
+        orbitLine.computeLineDistances();
+        scene.add(orbitLine);
+
+        // Also a faint solid line for glow effect
+        const orbitGeo2 = new THREE.BufferGeometry().setFromPoints(points);
+        const orbitMat2 = new THREE.LineBasicMaterial({ color: 0x226622, transparent: true, opacity: 0.2 });
+        const orbitLine2 = new THREE.LineLoop(orbitGeo2, orbitMat2);
+        scene.add(orbitLine2);
+
+        // --- Small arrow to indicate direction ---
+        const arrowGroup = new THREE.Group();
+        const arrowCone = new THREE.ConeGeometry(0.15, 0.5, 8);
+        const arrowMat = new THREE.MeshStandardMaterial({ color: 0xffaa00 });
+        const cone = new THREE.Mesh(arrowCone, arrowMat);
+        cone.position.set(orbitRadius + 0.2, 0, 0);
+        cone.rotation.z = -Math.PI/2;
+        arrowGroup.add(cone);
+        scene.add(arrowGroup);
+
+        // --- Variables for animation ---
+        let moonAngle = 0;
+        const moonSpeed = 0.5; // radians per second
+
+        // --- Animation loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const delta = clock.getDelta();
+
+            // Rotate Earth
+            earth.rotation.y += 0.001;
+
+            // Rotate stars slowly
+            stars.rotation.y += 0.0001;
+
+            // Moon orbit
+            moonAngle += moonSpeed * delta;
+            moon.position.x = Math.cos(moonAngle) * orbitRadius;
+            moon.position.z = Math.sin(moonAngle) * orbitRadius;
+            moon.position.y = 0;
+
+            // Rotate moon itself (realistic rotation tidally locked? not necessary)
+            moon.rotation.y += 0.005;
+
+            // Update arrow group to point tangent
+            arrowGroup.position.copy(moon.position);
+            arrowGroup.rotation.y = moonAngle + Math.PI/2;
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // --- Resize handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

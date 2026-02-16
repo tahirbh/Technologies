@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earth • Unified Top Bar • Independent Info Panel</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            background-color: black;
+        }
+        
+        /* Unified Top Bar */
+        #top-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #0f0;
+            border-radius: 60px;
+            padding: 10px 25px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5);
+            z-index: 150;
+            backdrop-filter: blur(4px);
+        }
+
+        #toggle-btn {
+            background: black;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 10px 20px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 15px #0f0;
+            transition: 0.2s;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        #toggle-btn:hover {
+            background: #0f0;
+            color: black;
+            box-shadow: 0 0 25px #0f0;
+        }
+
+        #makkah-clock {
+            color: #ffaa00;
+            background: black;
+            border: 2px solid #ffaa00;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-size: 1.8rem;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 4px;
+            box-shadow: 0 0 20px #ffaa00;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        #season-badge {
+            color: #0f0;
+            background: black;
+            border: 2px solid #0f0;
+            padding: 10px 25px;
+            border-radius: 50px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px #0f0;
+            text-transform: uppercase;
+            font-family: 'Courier New', monospace;
+            white-space: nowrap;
+        }
+
+        /* Independent Info Panel */
+        #info-panel {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            color: #0f0;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 20px 25px;
+            border-radius: 12px;
+            border: 2px solid #0f0;
+            box-shadow: 0 0 25px rgba(0, 255, 0, 0.5);
+            z-index: 100;
+            max-width: 420px;
+            backdrop-filter: blur(4px);
+            font-size: 1rem;
+            line-height: 1.6;
+            text-shadow: 0 0 6px #0f0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+        #info-panel.hidden {
+            opacity: 0;
+            transform: translateX(-30px);
+            pointer-events: none;
+        }
+        #info-panel h1 {
+            font-size: 1.4rem;
+            margin: 0 0 15px 0;
+            color: #0f0;
+            text-align: center;
+            border-bottom: 1px dashed #0f0;
+            padding-bottom: 8px;
+            letter-spacing: 2px;
+        }
+        #info-panel .data-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dotted #0f0;
+            padding: 6px 0;
+        }
+        #info-panel .label {
+            font-weight: bold;
+            color: #8f8;
+        }
+        #info-panel .value {
+            color: #fff;
+            text-shadow: 0 0 8px #0f0;
+            font-weight: bold;
+        }
+        #info-panel .small-note {
+            font-size: 0.85rem;
+            color: #aca;
+            margin-top: 12px;
+            text-align: center;
+            border-top: 1px solid #0f0;
+            padding-top: 10px;
+        }
+
+        #pause-indicator {
+            position: absolute;
+            top: 120px;
+            right: 30px;
+            color: #ffaa00;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid #ffaa00;
+            padding: 8px 18px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 15px #ffaa00;
+        }
+    </style>
+</head>
+<body>
+    <!-- Unified Top Bar -->
+    <div id="top-bar">
+        <button id="toggle-btn">📟 TOGGLE INFO</button>
+        <div id="makkah-clock">19:40:00</div>
+        <div id="season-badge">SPRING</div>
+    </div>
+
+    <!-- Independent Info Panel -->
+    <div id="info-panel">
+        <h1>⚡ EARTH • SEASON MATRIX ⚡</h1>
+        <div class="data-row">
+            <span class="label">MAKKAH ANGLE TO SUN:</span>
+            <span class="value" id="makkah-angle">23.5°</span>
+        </div>
+        <div class="data-row">
+            <span class="label">DISTANCE FROM SUN:</span>
+            <span class="value" id="distance-sun">147.1 M km</span>
+        </div>
+        <div class="data-row">
+            <span class="label">AXIAL TILT:</span>
+            <span class="value">23.5° (fixed)</span>
+        </div>
+        <div class="data-row">
+            <span class="label">ORBIT PROGRESS:</span>
+            <span class="value" id="orbit-progress">0%</span>
+        </div>
+        <div class="data-row">
+            <span class="label">MAKKAH DAY/NIGHT:</span>
+            <span class="value" id="day-night">DAY (lit)</span>
+        </div>
+        <div class="data-row">
+            <span class="label">ROTATION PROGRESS:</span>
+            <span class="value" id="rotation-percent">0% (0.0 min)</span>
+        </div>
+        <div class="small-note">
+            >> Globe rotation synced with Makkah clock (UTC+3)<br>
+            >> 24h rotation = 1440 minutes • 1% = 14.4 min<br>
+            >> Drag to pause • Release resets to current time
+        </div>
+    </div>
+
+    <div id="pause-indicator">⏸ PAUSED (drag)</div>
+
+    <!-- Three.js CDN and OrbitControls -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Setup Scene, Camera, Renderer ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050510);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // Position camera to have Earth centered, Sun off to the side
+        camera.position.set(0, 5, 20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = false;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- Controls with free movement - target Earth position ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.maxDistance = 60;
+        controls.minDistance = 4;
+        
+        // We'll set target to Earth's position dynamically in animation loop
+
+        // Pause state
+        let isPaused = false;
+        const pauseIndicator = document.getElementById('pause-indicator');
+
+        // UI Elements
+        const makkahClockElem = document.getElementById('makkah-clock');
+        const seasonBadge = document.getElementById('season-badge');
+        const seasonDisplay = document.getElementById('season-display'); // For info panel
+        const makkahAngleElem = document.getElementById('makkah-angle');
+        const distanceElem = document.getElementById('distance-sun');
+        const orbitProgressElem = document.getElementById('orbit-progress');
+        const dayNightElem = document.getElementById('day-night');
+        const rotationPercentElem = document.getElementById('rotation-percent');
+
+        // Reset function: set angles to current real-world time using Makkah time (UTC+3)
+        function resetToCurrentTime() {
+            const date = new Date();
+            
+            // Use Makkah time (UTC+3) for rotation
+            const makkahHours = (date.getUTCHours() + 3) % 24;
+            const makkahMinutes = date.getUTCMinutes();
+            const makkahSeconds = date.getUTCSeconds();
+            
+            // Calculate total seconds in Makkah day
+            const totalSecondsMakkah = makkahHours * 3600 + makkahMinutes * 60 + makkahSeconds;
+            const dayFraction = totalSecondsMakkah / (24 * 3600);
+            pausedDayAngle = dayFraction * 2 * Math.PI;
+            
+            // Year angle based on day of year (using UTC date, same for all locations)
+            const startOfYear = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+            const dayOfYear = Math.floor((date - startOfYear) / (24*3600*1000));
+            const equinoxDay = 79; // March 20
+            let dayOffset = (dayOfYear - equinoxDay + 365) % 365;
+            const yearFraction = dayOffset / 365.25;
+            pausedYearAngle = yearFraction * 2 * Math.PI;
+            
+            // Update Makkah clock display
+            updateMakkahClock();
+        }
+
+        function updateMakkahClock() {
+            const date = new Date();
+            const hours = (date.getUTCHours() + 3) % 24;
+            const minutes = date.getUTCMinutes();
+            const seconds = date.getUTCSeconds();
+            makkahClockElem.textContent = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+        }
+
+        controls.addEventListener('start', () => {
+            isPaused = true;
+            pauseIndicator.style.opacity = '1';
+        });
+        
+        controls.addEventListener('end', () => {
+            isPaused = false;
+            pauseIndicator.style.opacity = '0';
+            resetToCurrentTime();
+        });
+
+        // --- Create Sun as a movable object, positioned off-center ---
+        const sunGroup = new THREE.Group();
+        
+        const sunGeometry = new THREE.SphereGeometry(1.5, 64, 32);
+        const sunMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffaa33,
+            emissive: 0xff5500,
+            roughness: 0.2
+        });
+        const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+        sunGroup.add(sunMesh);
+
+        // Add a point light to the Sun group
+        const sunLight = new THREE.PointLight(0xffeedd, 2.5, 0, 0);
+        sunLight.position.set(0, 0, 0);
+        sunLight.decay = 0;
+        sunLight.distance = 0;
+        sunGroup.add(sunLight);
+
+        // Add a small glow using additional lights
+        const glowLight = new THREE.PointLight(0xffaa44, 1.5, 30);
+        glowLight.position.set(0, 0, 0);
+        sunGroup.add(glowLight);
+
+        scene.add(sunGroup);
+
+        // Position the Sun off-center (to the left and slightly up)
+        sunGroup.position.set(-6, 2, 0);
+
+        // Ambient light
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+
+        // Additional fill light from back
+        const backLight = new THREE.DirectionalLight(0x446688, 0.3);
+        backLight.position.set(-5, 5, -10);
+        scene.add(backLight);
+
+        // --- Stars (Matrix green tint) ---
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 3500;
+        const starsPositions = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i += 3) {
+            const r = 90 + Math.random() * 60;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starsPositions[i] = Math.sin(phi) * Math.cos(theta) * r;
+            starsPositions[i+1] = Math.sin(phi) * Math.sin(theta) * r;
+            starsPositions[i+2] = Math.cos(phi) * r;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+        const starsMaterial = new THREE.PointsMaterial({ color: 0x226622, size: 0.22, transparent: true, opacity: 0.5 });
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // --- Earth Group with axial tilt (23.5°) ---
+        const earthGroup = new THREE.Group();
+        const tiltAngle = 23.5 * Math.PI / 180;
+        earthGroup.rotation.x = tiltAngle;
+        scene.add(earthGroup);
+
+        const earthRadius = 2;
+
+        // Load textures
+        const textureLoader = new THREE.TextureLoader();
+        const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+        const earthSpecularMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+        const earthNormalMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+        const cloudMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+
+        const earthMaterial = new THREE.MeshPhongMaterial({
+            map: earthMap,
+            specularMap: earthSpecularMap,
+            specular: new THREE.Color('grey'),
+            shininess: 10,
+            normalMap: earthNormalMap,
+            normalScale: new THREE.Vector2(0.5, 0.5),
+        });
+        const earthMesh = new THREE.Mesh(new THREE.SphereGeometry(earthRadius, 64, 64), earthMaterial);
+        earthGroup.add(earthMesh);
+
+        const cloudMaterial = new THREE.MeshPhongMaterial({
+            map: cloudMap,
+            transparent: true,
+            opacity: 0.4,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+        const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(earthRadius + 0.02, 64, 64), cloudMaterial);
+        earthGroup.add(cloudMesh);
+
+        // Makkah marker (Mecca)
+        const makkahLat = 21.4225 * Math.PI/180;
+        const makkahLon = 39.826 * Math.PI/180;
+        const mkX = earthRadius * Math.cos(makkahLat) * Math.cos(makkahLon);
+        const mkY = earthRadius * Math.sin(makkahLat);
+        const mkZ = earthRadius * Math.cos(makkahLat) * Math.sin(makkahLon);
+        
+        const markerGeometry = new THREE.SphereGeometry(0.09, 16, 16);
+        const markerMaterial = new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0x440000 });
+        const makkahMarker = new THREE.Mesh(markerGeometry, markerMaterial);
+        makkahMarker.position.set(mkX, mkY, mkZ);
+        earthGroup.add(makkahMarker);
+
+        const ringGeo = new THREE.TorusGeometry(0.18, 0.012, 16, 32);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0x332200 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.position.set(mkX, mkY, mkZ);
+        ring.quaternion.setFromEuler(new THREE.Euler(makkahLat, -makkahLon, 0));
+        earthGroup.add(ring);
+
+        // North indicator
+        const northLineMat = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+        const northPoints = [new THREE.Vector3(0, earthRadius + 0.1, 0), new THREE.Vector3(0, earthRadius + 1.0, 0)];
+        const northGeo = new THREE.BufferGeometry().setFromPoints(northPoints);
+        const northLine = new THREE.Line(northGeo, northLineMat);
+        earthGroup.add(northLine);
+
+        // --- Orbital path ---
+        const orbitRadius = 8.5;
+        const orbitPoints = [];
+        for (let i = 0; i <= 128; i++) {
+            const angle = (i / 128) * Math.PI * 2;
+            orbitPoints.push(new THREE.Vector3(Math.cos(angle) * orbitRadius, 0, Math.sin(angle) * orbitRadius));
+        }
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+        const orbitMat = new THREE.LineBasicMaterial({ color: 0x226622, opacity: 0.4, transparent: true });
+        const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
+        scene.add(orbitLine);
+
+        // Add a grid for reference
+        const gridHelper = new THREE.GridHelper(20, 20, 0x226622, 0x113311);
+        gridHelper.rotation.x = Math.PI / 2;
+        gridHelper.position.y = -0.2;
+        scene.add(gridHelper);
+
+        // --- Time state ---
+        let pausedDayAngle = 0;
+        let pausedYearAngle = 0;
+        
+        // Initialize to current time using Makkah time
+        function initFromCurrentTime() {
+            const date = new Date();
+            
+            // Use Makkah time (UTC+3) for rotation
+            const makkahHours = (date.getUTCHours() + 3) % 24;
+            const makkahMinutes = date.getUTCMinutes();
+            const makkahSeconds = date.getUTCSeconds();
+            
+            const totalSecondsMakkah = makkahHours * 3600 + makkahMinutes * 60 + makkahSeconds;
+            const dayFraction = totalSecondsMakkah / (24 * 3600);
+            pausedDayAngle = dayFraction * 2 * Math.PI;
+            
+            const startOfYear = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+            const dayOfYear = Math.floor((date - startOfYear) / (24*3600*1000));
+            const equinoxDay = 79;
+            let dayOffset = (dayOfYear - equinoxDay + 365) % 365;
+            const yearFraction = dayOffset / 365.25;
+            pausedYearAngle = yearFraction * 2 * Math.PI;
+            
+            updateMakkahClock();
+        }
+        initFromCurrentTime();
+
+        function getSeason(angle) {
+            let a = angle % (2*Math.PI);
+            if (a < 0) a += 2*Math.PI;
+            if (a < Math.PI/2) return 'SPRING';
+            if (a < Math.PI) return 'SUMMER';
+            if (a < 3*Math.PI/2) return 'AUTUMN';
+            return 'WINTER';
+        }
+
+        function computeMakkahAngle(earthPos, earthGroupMatrix, localMakkahPos) {
+            const makkahWorld = new THREE.Vector3().copy(localMakkahPos).applyMatrix4(earthGroupMatrix);
+            const toSun = new THREE.Vector3().copy(sunGroup.position).sub(makkahWorld).normalize();
+            const earthCenter = earthPos;
+            const normal = new THREE.Vector3().copy(makkahWorld).sub(earthCenter).normalize();
+            const dot = normal.dot(toSun);
+            const angleRad = Math.acos(Math.max(-1, Math.min(1, dot)));
+            return angleRad * 180 / Math.PI;
+        }
+
+        // Toggle info panel
+        const toggleBtn = document.getElementById('toggle-btn');
+        const infoPanel = document.getElementById('info-panel');
+        toggleBtn.addEventListener('click', () => {
+            infoPanel.classList.toggle('hidden');
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (!isPaused) {
+                // Update angles based on real time using Makkah time (UTC+3)
+                const date = new Date();
+                const makkahHours = (date.getUTCHours() + 3) % 24;
+                const makkahMinutes = date.getUTCMinutes();
+                const makkahSeconds = date.getUTCSeconds();
+                
+                const totalSecondsMakkah = makkahHours * 3600 + makkahMinutes * 60 + makkahSeconds;
+                const dayFraction = totalSecondsMakkah / (24 * 3600);
+                pausedDayAngle = dayFraction * 2 * Math.PI;
+                
+                const startOfYear = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+                const dayOfYear = Math.floor((date - startOfYear) / (24*3600*1000));
+                const equinoxDay = 79;
+                let dayOffset = (dayOfYear - equinoxDay + 365) % 365;
+                const yearFraction = dayOffset / 365.25;
+                pausedYearAngle = yearFraction * 2 * Math.PI;
+                
+                // Update Makkah clock
+                updateMakkahClock();
+            }
+
+            // Position Earth relative to Sun
+            const sunPos = sunGroup.position;
+            const orbitX = Math.cos(pausedYearAngle) * orbitRadius;
+            const orbitZ = Math.sin(pausedYearAngle) * orbitRadius;
+            
+            earthGroup.position.x = sunPos.x + orbitX;
+            earthGroup.position.z = sunPos.z + orbitZ;
+            earthGroup.position.y = sunPos.y;
+
+            // Apply daily rotation - synced with Makkah time
+            earthMesh.rotation.y = pausedDayAngle;
+            cloudMesh.rotation.y = pausedDayAngle * 1.01;
+
+            // Update controls target to Earth's position
+            controls.target.copy(earthGroup.position);
+
+            // Update UI
+            const currentSeason = getSeason(pausedYearAngle);
+            seasonBadge.textContent = currentSeason;
+            
+            const localMakkah = new THREE.Vector3(mkX, mkY, mkZ);
+            const angleMakkah = computeMakkahAngle(earthGroup.position, earthGroup.matrixWorld, localMakkah);
+            makkahAngleElem.textContent = angleMakkah.toFixed(2) + '°';
+
+            const dist = earthGroup.position.distanceTo(sunGroup.position);
+            const distMillKm = dist * 17.65;
+            distanceElem.textContent = distMillKm.toFixed(1) + ' M km';
+
+            const progress = ((pausedYearAngle % (2*Math.PI)) / (2*Math.PI)) * 100;
+            orbitProgressElem.textContent = progress.toFixed(2) + '%';
+
+            if (angleMakkah > 90) {
+                dayNightElem.textContent = 'NIGHT (dark)';
+                dayNightElem.style.color = '#6699ff';
+            } else {
+                dayNightElem.textContent = 'DAY (lit)';
+                dayNightElem.style.color = '#ffaa00';
+            }
+
+            const dayFraction = (pausedDayAngle % (2*Math.PI)) / (2*Math.PI);
+            const percent = (dayFraction * 100).toFixed(2);
+            const minutes = (dayFraction * 1440).toFixed(1);
+            rotationPercentElem.textContent = `${percent}% (${minutes} min)`;
+
+            stars.rotation.y += 0.00003;
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

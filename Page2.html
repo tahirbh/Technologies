@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earth Rotation & Seasons – Three.js</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 12px 20px;
+            border-radius: 30px;
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        #season-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            background: rgba(0,0,0,0.8);
+            padding: 16px 28px;
+            border-radius: 50px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            border-left: 6px solid #ffaa00;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            text-transform: uppercase;
+        }
+        #controls-note {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: #ccc;
+            background: rgba(20,20,20,0.6);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 100;
+            backdrop-filter: blur(3px);
+        }
+        .sun-side { color: #ffaa00; font-weight: bold; }
+        .dark-side { color: #6699ff; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <input type="number" id="star-count" value="1"> Show Stars<br>
+        <span style="font-size:1.2rem;">🌍 Earth's Cycle</span><br>
+        <span id="display-angle">Axial Tilt: 23.5°</span>
+    </div>
+    <div id="season-badge" id="season-text">Spring</div>
+    <div id="controls-note">⏵ 24h rotation (self) • Annual orbit • Seasons via axial tilt • Fixed Sun direction</div>
+
+    <!-- Three.js CDN and OrbitControls -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Setup Scene, Camera, Renderer ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a20); // deep space
+
+        const camera = new THREE.PerspectiveCamera(15, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(15, 5, 20); // elevated view
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = false; // not needed
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // Controls for easy observation
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = false;
+        controls.enableZoom = true;
+        controls.maxDistance = 40;
+        controls.minDistance = 8;
+        controls.target.set(0, 0, 0);
+
+        // --- Lighting ---
+        // Ambient light to see dark side a bit
+        const ambientLight = new THREE.AmbientLight(0x404060); // subtle fill
+        scene.add(ambientLight);
+
+        // The Sun (directional light from a fixed direction)
+        // We'll keep the light stationary to simulate sun direction, while earth orbits and rotates.
+        const sunLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+        sunLight.position.set(10, 3, 10); // Fixed in world space: sun rays come from this general direction
+        // Add a slight warm tone
+        sunLight.color.setHex(0xfff5e6);
+        scene.add(sunLight);
+
+        // Add a second faint fill from opposite side to reveal silhouette
+        const backLight = new THREE.DirectionalLight(0x445566, 0.2);
+        backLight.position.set(-10, -5, -10);
+        scene.add(backLight);
+
+        // Optional: a small sphere to represent the sun visually (in the same direction)
+        const sunSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.8, 32, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffaa33, emissive: 0xff5500 })
+        );
+        sunSphere.position.copy(sunLight.position);
+        scene.add(sunSphere);
+        
+        // Add a glow effect using point light at sun position
+        const sunGlow = new THREE.PointLight(0xffaa44, 1, 30);
+        sunGlow.position.copy(sunLight.position);
+        scene.add(sunGlow);
+
+        // --- Stars background (particle system) ---
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 4000;
+        const starsPositions = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i += 3) {
+            // Random sphere distribution
+            const r = 80 + Math.random() * 40;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            starsPositions[i] = Math.sin(phi) * Math.cos(theta) * r;
+            starsPositions[i+1] = Math.sin(phi) * Math.sin(theta) * r;
+            starsPositions[i+2] = Math.cos(phi) * r;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.8 });
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // --- Earth Group ---
+        // We group earth and its axis indicator, tilt it 23.5° relative to the orbital plane (XZ)
+        const earthGroup = new THREE.Group();
+        // Apply axial tilt (approx 23.5 degrees in radians). Rotate around Z so that axis leans in Y direction relative to orbit.
+        // We want the North pole to point roughly towards (0,1,0) but tilted away from orbital normal.
+        // Standard: tilt axis is along Y after rotation? Actually we rotate around X to tilt the Y axis.
+        // For simplicity, we rotate around Z so that the Y axis tilts in the direction of the orbit? We'll set it to a fixed tilt relative to the orbital plane.
+        // The important part: the tilt direction relative to the sun changes as earth orbits. We'll handle that by rotating the earthGroup around Y (orbit) while maintaining its internal tilt.
+        // Tilt earth so that its north pole points to (0, 1, 0) rotated by -23.5deg around X? Let's do: rotate around X axis by -23.5° to tilt the north pole towards +Z? Actually:
+        // To have axis pointing at an angle, simplest: rotate earthGroup around X by -23.5° (rad). Then the Y axis (original north) points slightly forward/back.
+        // But we need the tilt direction to be fixed relative to the orbit so that seasons change. We'll rotate earthGroup around Y for orbit, and the internal tilt will cause varying illumination.
+        const tiltAngle = 23.5 * Math.PI / 180;
+        earthGroup.rotation.x = tiltAngle; // This makes the north pole tilt towards the +Z direction initially.
+        // Now as earthGroup rotates around Y (orbit), the tilt direction relative to sun changes.
+        
+        scene.add(earthGroup);
+
+        // --- Earth Mesh ---
+        const geometry = new THREE.SphereGeometry(2, 64, 64);
+        const textureLoader = new THREE.TextureLoader();
+        // Using high-res Earth textures from Three.js examples (via CDN)
+        const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+        const earthSpecularMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+        const earthNormalMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+        const cloudMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+
+        const material = new THREE.MeshPhongMaterial({
+            map: earthMap,
+            specularMap: earthSpecularMap,
+            specular: new THREE.Color('grey'),
+            shininess: 10,
+            normalMap: earthNormalMap,
+            normalScale: new THREE.Vector2(0.5, 0.5),
+        });
+
+        const earthMesh = new THREE.Mesh(geometry, material);
+        earthGroup.add(earthMesh);
+
+        // --- Clouds (transparent layer) ---
+        const cloudGeometry = new THREE.SphereGeometry(2.01, 64, 64);
+        const cloudMaterial = new THREE.MeshPhongMaterial({
+            map: cloudMap,
+            transparent: true,
+            opacity: 0.4,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+        const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        earthGroup.add(cloudMesh);
+
+        // --- Axis indicator (thin line) to visualize tilt ---
+        const axisHelper = new THREE.AxesHelper(3); // show local orientation
+        earthGroup.add(axisHelper); // but axes helper is red/green/blue; maybe too cluttered. Use a custom line for north.
+        // Instead, add a small line from center to north.
+        const northLineMat = new THREE.LineBasicMaterial({ color: 0xffaa00 });
+        const northPoints = [
+            new THREE.Vector3(0, 2.5, 0),
+            new THREE.Vector3(0, 3.2, 0)
+        ];
+        const northGeo = new THREE.BufferGeometry().setFromPoints(northPoints);
+        const northLine = new THREE.Line(northGeo, northLineMat);
+        earthGroup.add(northLine);
+        
+        // Add a small sphere at north
+        const northPole = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffaa00 }));
+        northPole.position.set(0, 3.25, 0);
+        earthGroup.add(northPole);
+
+        // --- Orbital path (circle) ---
+        const orbitRadius = 7.5;
+        const orbitPoints = [];
+        const segments = 128;
+        for (let i = 0; i <= segments; i++) {
+            const angle = (i / segments) * Math.PI * 2;
+            const x = Math.cos(angle) * orbitRadius;
+            const z = Math.sin(angle) * orbitRadius;
+            orbitPoints.push(new THREE.Vector3(x, 0, z));
+        }
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+        const orbitMat = new THREE.LineBasicMaterial({ color: 0x88aaff, opacity: 0.3, transparent: true });
+        const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
+        scene.add(orbitLine);
+
+        // Markers for equinox/solstice directions (relative to sun direction? We'll just show some dots)
+        // Not necessary but nice.
+
+        // --- State variables for time ---
+        let dayAngle = 0;          // for 24h rotation (earth self rotation)
+        const daySpeed = 1/document.getElementById("star-count").value;      // rotation speed (approx 2pi per frame * speed factor, but we want relative to orbit)
+        let yearAngle = 0;          // position on orbit around sun (around Y axis)
+        const yearSpeed = 0.0001;     // speed of annual revolution
+        
+        // We'll control seasons by positioning earthGroup at yearAngle around sun (origin) but sun is fixed at (10,3,10) not at origin.
+        // Actually sun is at fixed position, earth orbits around origin. We need earth to orbit around origin (0,0,0) but sun is off-center.
+        // To simulate correct illumination, sun light direction should be from sun position to earth. But we fixed light at (10,3,10).
+        // To have seasons, we need the earth's tilt orientation relative to the sun to change as it orbits.
+        // Since light is fixed, we will move earth around origin (0,0,0). The light direction relative to earth changes due to earth's position.
+        // That's correct: the sun's rays come from the fixed sun position. As earth orbits, the direction from earth to sun changes.
+        // However, for the tilt to cause seasons, the earth's axial tilt (internal rotation of earthGroup) must maintain orientation in world space (not relative to orbit).
+        // We have set earthGroup.rotation.x = tiltAngle. That gives a fixed world tilt direction. Then we rotate the entire earthGroup around Y for orbit.
+        // That means the north pole always points roughly in the same world direction (tilted towards +Z a bit). As earth moves around, the pole points consistently,
+        // causing the illumination to vary: when earth is on one side of orbit, north is tilted toward sun; on opposite side, north is tilted away.
+        // That's perfect for seasons. However, our sun light is fixed at (10,3,10). That's not at the center; but direction matters. For true seasons,
+        // the sun should be at one focus. But with fixed light position, the illumination direction will vary appropriately as earth moves around (0,0,0).
+        // But we want the sun's apparent direction to be from the sun sphere. That sphere is at (10,3,10). So for earth at different positions, the vector
+        // from earth to sun changes. However, our orbital center is (0,0,0), not the sun position. To keep sun direction correct, we need the earth to orbit around the sun.
+        // That means the sun should be at center. Let's adjust: Place sun at (0,0,0), and let earth orbit around it. But then camera view might be tricky.
+        // Alternatively, we can keep sun at (0,0,0) and place light there. That is simpler and more accurate for heliocentric.
+        // I'll change: put sun at origin, earth orbits at radius 7.5. Then the light direction is always from origin to earth? Actually directional light simulates distant sun,
+        // so direction should be from sun to earth. If we put a point light at origin, that's fine. But we want directional light for sharp shadows? We'll use a point light or a directional light aimed at earth.
+        // To simplify and make visually clear, I'll place a point light at origin and also a directional light from origin towards earth? No, let's use a PointLight at origin, and also have a visible sun sphere.
+        // That way as earth orbits, the illumination comes from the center, creating day/night and seasons correctly with the fixed axial tilt.
+        
+        // --- Revised: Sun at center ---
+        // Remove previous sun light and sphere
+        scene.remove(sunLight);
+        scene.remove(sunSphere);
+        scene.remove(sunGlow);
+        
+        // New sun at origin
+        const coreSun = new THREE.Mesh(
+            new THREE.SphereGeometry(1.2, 32, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffaa33, emissive: 0xff5500 })
+        );
+        scene.add(coreSun);
+        
+        // Point light at center
+        const sunPointLight = new THREE.PointLight(0xffeedd, 2, 0, 0);
+        sunPointLight.position.set(0, 0, 0);
+        scene.add(sunPointLight);
+        
+        // Add ambient to light dark side a bit
+        scene.add(new THREE.AmbientLight(0x404060));
+        
+        // Also add a directional light from center to enhance shading? Not needed, point light works.
+        // But point light illuminates all sides evenly? No, it's at center, so it illuminates the side facing center. For a sphere at distance, the side facing origin gets light.
+        // Since earth is orbiting around origin, the side facing origin (the sun) is lit. That's correct. The opposite side is dark.
+        // However, point light intensity falls off. We set distance decay to 0 to avoid falloff? Actually we want uniform illumination at orbital distance.
+        // We'll set decay to 0 and distance to 0 to have constant intensity. Or use a directional light from origin towards earth? But directional light has no position, only direction.
+        // We'll keep point light with no decay: set decay = 0, distance = 0.
+        sunPointLight.decay = 0;
+        sunPointLight.distance = 0;
+        sunPointLight.intensity = 1.8;
+        
+        // For better shading, also add a small directional from origin to earth's current position? Not needed.
+        
+        // Now adjust earthGroup start position: place it at (orbitRadius, 0, 0) initially (on +X axis). But we want seasons to start at Spring for example.
+        // We'll manage by yearAngle. For spring (north pole tilted toward sun? Actually spring/autumn equinox: terminator line through poles, no tilt relative to sun.
+        // Let's define: at yearAngle = 0 (earth at (radius,0,0)), we want northern hemisphere spring? We need to set tilt orientation.
+        // Our earthGroup.rotation.x = tiltAngle makes north pole point in +Z direction (0,0,1) after rotation? Let's compute: default identity, north is +Y. Rotate around X by +tiltAngle: 
+        // north (+Y) rotates towards +Z. So north pole points to (0, cos(tilt), sin(tilt)) i.e. (0, 0.917, 0.4) for 23.5°. So it's pointing somewhat in +Z direction.
+        // So the axial direction is fixed in world: (0, 0.917, 0.4). That means at different positions around orbit, the side facing sun changes.
+        // For spring equinox, the axis should be perpendicular to the sun line (no tilt towards or away). So when earth is on the +X axis, the sun direction is from origin to earth = (+1,0,0) direction.
+        // The axis is (0,0.9,0.4). Dot with sun direction (1,0,0) = 0 => perpendicular. Good, that's equinox condition (axis perpendicular to sun-earth line).
+        // So spring equinox occurs at this position. We'll call yearAngle=0 spring.
+        // Summer solstice: when axis tilts towards sun => earth at position where sun direction aligns with axis component. That would be when earth is on +Z axis (since axis has +Z component).
+        // At earth pos (0,0,orbitRadius), sun direction = (0,0,1), dot with axis (0,0.9,0.4) = 0.4, positive, so north tilted towards sun => summer.
+        // So we can set yearAngle = 90° (PI/2) for summer.
+        // Autumn at 180°, winter at 270°.
+        
+        // Set initial yearAngle for spring
+        yearAngle = 0; // spring
+        
+        // But we also want dynamic progression. We'll update yearAngle over time.
+        
+        // Update earth position based on yearAngle
+        function updateEarthPosition() {
+            const x = Math.cos(yearAngle) * orbitRadius;
+            const z = Math.sin(yearAngle) * orbitRadius;
+            earthGroup.position.set(x, 0, z);
+            
+            // Also rotate earthGroup around Y for orbit? No, we already position. The tilt is fixed in world, so we do not rotate earthGroup for orbit, just translate.
+            // But we want the earth's orientation to remain with fixed axial direction in world (north pole pointing (0, 0.917, 0.4)). That is already set by rotation.x.
+            // However, to keep the same face towards sun over orbit? No, we want the earth to also rotate daily around its own axis (Y axis after tilt).
+            // The daily rotation should be applied after tilt. So we need to rotate earthMesh and cloudMesh around the earthGroup's local Y axis.
+            // But earthGroup's Y axis is tilted. So we can rotate earthMesh and cloudMesh.
+            // We'll handle daily rotation separately.
+        }
+        updateEarthPosition();
+
+        // --- UI update elements ---
+        const seasonElem = document.getElementById('season-badge');
+        const angleElem = document.getElementById('display-angle');
+        
+        // Determine season from yearAngle
+        function getSeason(angle) {
+            // angle in radians, 0 = spring, PI/2 = summer, PI = autumn, 3PI/2 = winter
+            const pi = Math.PI;
+            const twoPi = 2 * pi;
+            // normalize to 0-2pi
+            let a = angle % twoPi;
+            if (a < 0) a += twoPi;
+            
+            if (a < pi/2) return 'Spring';
+            if (a < pi) return 'Summer';
+            if (a < 3*pi/2) return 'Autumn';
+            return 'Winter';
+        }
+
+        // --- Animation loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Increment time
+            dayAngle += daySpeed; // daily rotation
+            yearAngle += yearSpeed; // annual motion (radians per frame)
+            
+            // Update earth position on orbit
+            const x = Math.cos(yearAngle) * orbitRadius;
+            const z = Math.sin(yearAngle) * orbitRadius;
+            earthGroup.position.set(x, 0, z);
+            
+            // Daily rotation: rotate earth and clouds around earthGroup's local Y (which is tilted)
+            earthMesh.rotation.y = dayAngle;
+            cloudMesh.rotation.y = dayAngle * 1.2; // clouds move slightly faster for effect
+            
+            // Update season display
+            const currentSeason = getSeason(yearAngle);
+            seasonElem.textContent = currentSeason;
+            
+            // Update info text with tilt
+            // Also show approximate month? Not needed.
+            
+            // Rotate stars slowly for ambiance
+            stars.rotation.y += 0.0001;
+            
+            controls.update(); // for damping
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // --- Handle window resize ---
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Add a subtle axis arrow for reference (orbital plane)
+        const gridHelper = new THREE.GridHelper(20, 20, 0x336699, 0x224466);
+        gridHelper.rotation.x = Math.PI / 2; // lay flat on XZ plane? Actually gridHelper default is on XZ, we want horizontal.
+        gridHelper.position.y = -0.1;
+        scene.add(gridHelper);
+        
+        // Add some small markers for equinox/solstice directions? Not necessary.
+
+        console.log('Project started: Earth rotation, orbit, and seasons with fixed axial tilt.');
+    </script>
+</body>
+</html>
