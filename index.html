@@ -238,9 +238,10 @@
         </div>
     </div>
 <nav id="nav-hud">
-    <a href="/" class="nav-link">System Overview</a>
+    <a href="index.html" class="nav-link">System Overview</a>
     <a href="Page2.html" class="nav-link">Seasonal Physics</a>
     <a href="page3.html" class="nav-link">Earth Matrix</a>
+    <a href="Gravity.html" class="nav-link">Gravity</a>
 </nav>
     <div id="canvas-container"></div>
 
@@ -620,8 +621,9 @@
 
         window.addEventListener('mousemove', onPointerMove, { passive: false });
         window.addEventListener('touchmove', onPointerMove, { passive: false });
-        window.addEventListener('touchstart', onPointerClick, { passive: false });
-        window.addEventListener('click', onPointerClick, { passive: false });
+        
+        renderer.domElement.addEventListener('click', onPointerClick);
+        renderer.domElement.addEventListener('touchstart', onPointerClick);
 
         // Update stats
         function updateStats() {
