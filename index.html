@@ -19,37 +19,7 @@
             height: 100vh;
         }
 
-        /* Navigation Overlay */
-#nav-hud {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    z-index: 1000;
-}
-
-.nav-link {
-    background: rgba(0, 20, 0, 0.8);
-    border: 1px solid #00ff00;
-    color: #00ff00;
-    padding: 15px;
-    text-decoration: none;
-    font-size: 12px;
-    transition: all 0.3s;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-}
-
-.nav-link:hover {
-    background: #00ff00;
-    color: #000;
-    box-shadow: 0 0 20px #00ff00;
-}
+       
         #canvas-container {
             width: 100%;
             height: 100%;
@@ -237,12 +207,7 @@
             <div class="loading-progress"></div>
         </div>
     </div>
-<!-- <nav id="nav-hud">
-    <a href="index.html" class="nav-link">System Overview</a>
-    <a href="Page2.html" class="nav-link">Seasonal Physics</a>
-    <a href="page3.html" class="nav-link">Earth Matrix</a>
-    <a href="Gravity.html" class="nav-link">Gravity</a>
-</nav> -->
+
     <div id="canvas-container"></div>
 
     <!-- Top Info Panel -->
@@ -313,14 +278,14 @@
 
         // Planet data with emojis
         const planetData = {
-            mercury: { emoji: '☿️', name: 'MERCURY', description: 'Closest to sun. Extreme temps. Heavily cratered.' },
-            venus: { emoji: '♀️', name: 'VENUS', description: 'Acid clouds. Hottest planet. Retrograde rotation.' },
+            mercury: { emoji: '🌍', name: 'MERCURY', description: 'Closest to sun. Extreme temps. Heavily cratered.' },
+            venus: { emoji: '🌍', name: 'VENUS', description: 'Acid clouds. Hottest planet. Retrograde rotation.' },
             earth: { emoji: '🌍', name: 'EARTH', description: 'The Blue Marble. Only known life. 71% water.' },
-            mars: { emoji: '♂️', name: 'MARS', description: 'Iron oxide. Largest volcano. Ancient water.' },
-            jupiter: { emoji: '♃', name: 'JUPITER', description: 'Largest. Great Red Spot storm. 79 moons.' },
-            saturn: { emoji: '♄', name: 'SATURN', description: 'Ice-rock rings. Low density. 82 moons.' },
-            uranus: { emoji: '♅', name: 'URANUS', description: 'Rotates sideways. Faint rings. Coldest.' },
-            neptune: { emoji: '♆', name: 'NEPTUNE', description: 'Supersonic winds. Dark Spot. Triton moon.' }
+            mars: { emoji: '🌍', name: 'MARS', description: 'Iron oxide. Largest volcano. Ancient water.' },
+            jupiter: { emoji: '🌍', name: 'JUPITER', description: 'Largest. Great Red Spot storm. 79 moons.' },
+            saturn: { emoji: '🌍', name: 'SATURN', description: 'Ice-rock rings. Low density. 82 moons.' },
+            uranus: { emoji: '🌍', name: 'URANUS', description: 'Rotates sideways. Faint rings. Coldest.' },
+            neptune: { emoji: '🌍', name: 'NEPTUNE', description: 'Supersonic winds. Dark Spot. Triton moon.' }
         };
 
         // Create canvas textures
